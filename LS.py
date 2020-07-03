@@ -113,7 +113,7 @@ def Γ_LS(P, T, C, N, φ=0, β=0, λ=0, convex=True):
     D = C + d
     N = N.dot(R)
     
-    vis = np.dot(e_in, N.T) > 0.0
+    vis = np.dot(e_in, N.T) < 0.0
     Q = np.abs(D.dot(e_in))
     jj = np.argsort(Q)
     Γ = np.array([0.0, 0.0, 0.0])
@@ -121,7 +121,7 @@ def Γ_LS(P, T, C, N, φ=0, β=0, λ=0, convex=True):
     if convex:
         for i, n in enumerate(N):
             if not vis[i]: continue
-            Γ += Γ_dA(C[i, :], n, e_in)
+            Γ += Γ_dA(C[i, :], -n, e_in)
     else:
         for i, j in enumerate(jj):
             if not vis[j]: continue
@@ -132,7 +132,7 @@ def Γ_LS(P, T, C, N, φ=0, β=0, λ=0, convex=True):
                     if PointInTriangle(point, P[t, 1:3]):
                         vis[j] = False
                 if vis[j]:
-                    Γ += Γ_dA(C[j, :], N[j], e_in)
+                    Γ += Γ_dA(C[j, :], -N[j], e_in)
     return Γ.dot(R.T)
 
 if __name__ == '__main__':
