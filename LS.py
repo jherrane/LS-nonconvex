@@ -133,7 +133,7 @@ def Γ_LS(P, T, C, N, φ=0, β=0, λ=0, convex=True):
                         vis[j] = False
                 if vis[j]:
                     Γ += Γ_dA(C[j, :], N[j], e_in)
-    return Γ
+    return Γ.dot(R.T)
 
 if __name__ == '__main__':
     a = 1
