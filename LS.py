@@ -69,7 +69,7 @@ def Φ_LS_n(N, α, φ=0, β=0, λ=0):
     return S
 
 def Φ_LS(P, T, C, N, α, φ=0, β=0, λ=0):
-    e_in = np.array([1, 0, 0])
+    e_in = np.array([0.,0.,1.])
     Rα = Rot.from_euler('x', α).as_matrix()
     R = Rot.from_euler('ZXY', [λ, -β, φ]).as_matrix()
     e_eye = matmul(Rα, e_in)
