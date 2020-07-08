@@ -17,11 +17,11 @@ def Φ_LS_a(a, b, c, α, φ=0, β=0, λ=0):
     rotation matrix in order to find e_out. Angle gamma is used to rotate the
     scattering body about z''-axis
     """
-    e_in = np.array([1, 0, 0])
+    e_in = np.array([0., 0., 1.])
     if pi - α < 1e-07: return 0.0
 
-    Rα = Rot.from_euler('z', α).as_matrix()
-    R = Rot.from_euler('ZYZ', [λ, -β, φ]).as_matrix()
+    Rα = Rot.from_euler('x', α).as_matrix()
+    R = Rot.from_euler('ZXY', [λ, -β, φ]).as_matrix()
     e_out = matmul(Rα, e_in)
     e_out = matmul(R.T, e_out)
     e_in = matmul(R.T, e_in)
@@ -59,9 +59,9 @@ def Φ_LS_dA(n, alpha, e_in, e_obs):
 
 def Φ_LS_n(N, α, φ=0, β=0, λ=0):
     """Calculates the Lommel-Seeliger integral phase function numerically."""
-    e_in = np.array([1, 0, 0])
-    Rα = Rot.from_euler('z', α).as_matrix()
-    R = Rot.from_euler('ZYZ', [φ, -β, λ]).as_matrix()
+    e_in = np.array([0.,0.,1.])
+    Rα = Rot.from_euler('x', α).as_matrix()
+    R = Rot.from_euler('ZXY', [φ, -β, λ]).as_matrix()
     e_out = matmul(Rα, e_in)
     S = 0.0
     for i, n in enumerate(N):
@@ -70,8 +70,8 @@ def Φ_LS_n(N, α, φ=0, β=0, λ=0):
 
 def Φ_LS(P, T, C, N, α, φ=0, β=0, λ=0):
     e_in = np.array([1, 0, 0])
-    Rα = Rot.from_euler('z', α).as_matrix()
-    R = Rot.from_euler('ZYZ', [λ, -β, φ]).as_matrix()
+    Rα = Rot.from_euler('x', α).as_matrix()
+    R = Rot.from_euler('ZXY', [λ, -β, φ]).as_matrix()
     e_eye = matmul(Rα, e_in)
     d = 10 * np.amax(np.abs(np.linalg.norm(P, axis=1))) * e_in
     P = P.dot(R.T) + d
@@ -104,8 +104,8 @@ def Γ_dA(r, n, e_in):
 
 def Γ_LS(P, T, C, N, φ=0, β=0, λ=0, convex=True):
     """Calculates the Lommel-Seeliger integral phase function numerically."""
-    e_in = np.array([1, 0, 0])
-    R = Rot.from_euler('ZYZ', [φ, -β, λ]).as_matrix()
+    e_in = np.array([0.,0.,1.])
+    R = Rot.from_euler('ZXY', [φ, -β, λ]).as_matrix()
     
     d = 10 * np.amax(np.abs(np.linalg.norm(P, axis=1))) * e_in
     P = P.dot(R) + d

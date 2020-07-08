@@ -5,7 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits import mplot3d
 from points import *
 from LS import *
-from scipy.spatial.transform import Rotation as R
+from scipy.spatial.transform import Rotation as Rot
 from matplotlib import cm
 
 plt.rcParams["font.family"] = "Lucida Grande"

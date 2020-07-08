@@ -60,57 +60,73 @@ Ip, Q = trimesh.inertia.principal_axis(I)
 P = matmul(P,Q.T)
 T, N, C = surface_normals(P, T)
 
-def draw_mesh(mesh):
-    fig = plt.figure(figsize=(6, 6),frameon=False)
-    ax = mplot3d.Axes3D(fig)
-
-    # Collect face data as vectors for plotting
-    F = mesh.elements
-
-    facevectors = np.zeros((F.shape[0],3,3))
-    for i, face in enumerate(F):
-        for j in range(3):
-            facevectors[i][j] = mesh.vertices[face[j],:]
-    ax.add_collection3d(mplot3d.art3d.Poly3DCollection(facevectors, facecolor=[0.5,0.5,0.5], lw=0.5,edgecolor=[0,0,0], alpha=0.66))
-    
-    scale = mesh.vertices.flatten()
-    
-    I = trimesh.Trimesh(vertices=P,
-                       faces=T,
-                       process=False).moment_inertia
-    Ip, Q = trimesh.inertia.principal_axis(I)
-    ax.quiver(0,0,0,Q[2,0],Q[2,1],Q[2,2],length=20,normalize=False)
-    ax.quiver(-10,-15,0,1.3,0,0,length=20,normalize=False,color='k')
-    ax.auto_scale_xyz(scale, scale, scale)
-
-    plt.show()
-    return fig
-
-mesh = pymesh.form_mesh(P,T)
-fig = draw_mesh(mesh)
-
 # Use the ZX'Z''- intrinsic rotation notation, where following angles 
 # are in corresponding order
 #λ = np.array([0.])
 #β = np.array([π/3])
-λ = np.linspace(0, 2*π, 50)
-β = np.linspace(0, π, 50)
-φ = np.linspace(0, 2*π, 50)
+λ = np.linspace(0, π, 30)
+β = np.linspace(0, 2*π, 31)
+φ = np.linspace(0, 2*π, 31)
 
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+λn = np.linspace(0, π, 90)
+βn = np.linspace(0, 2*π, 91)
+φn = np.linspace(0, 2*π, 91)
 
 data = np.loadtxt('data.dat')
-#data = np.loadtxt('data_nonconvex.dat')
-#data0 = np.loadtxt('data_convex.dat')
 Γ = data.reshape([φ.size, β.size, λ.size, 3])
-#Γ0 = data0.reshape([φ.size, β.size, λ.size, 3])
-#Γ2 = (Γ-Γ0)/Γ
 
-Γ2 = Γ
+from scipy.interpolate import interpn
+
+gx, gy, gz = np.meshgrid(φ,β,λ)
+
 jjj = 0
+for kkk in range(λn.size):
+    for iii in range(βn.size):
+        βi = βn[iii]
+        λi = λn[kkk]
+        R = Rot.from_euler('ZXY', [0, -βi, λi]).as_matrix()
+        fig = plt.figure(figsize=plt.figaspect(0.5))
+        ax1 = fig.add_subplot(1, 2, 1, projection='3d')
+        F = mesh.elements
+        I = trimesh.Trimesh(vertices=P,
+                           faces=T,
+                           process=False).moment_inertia
+        Ip, Q = trimesh.inertia.principal_axis(I)
 
-import imageio
-image_list = []
-for i in range(1,4951):
-    image_list.append(imageio.imread(str(i)+'.png'))
-imageio.mimwrite('anim_long.mp4', image_list, fps=30)
+        P2 = matmul(mesh.vertices,R)
+        Q = matmul(R, Q)
+        facevectors = np.zeros((F.shape[0],3,3))
+        for i, face in enumerate(F):
+            for j in range(3):
+                facevectors[i][j] = P2[face[j],:]
+
+        ax1.add_collection3d(mplot3d.art3d.Poly3DCollection(facevectors, facecolor=[0.5,0.5,0.5], lw=0.5,edgecolor=[0,0,0], alpha=0.66))
+        ax1.quiver(0,0,0,Q[2,0],Q[2,1],Q[2,2],length=20,normalize=False,label="body axis")
+        ax1.quiver(15,10,-10,0,0,20,length=1,normalize=False,color='k', label="illumination")
+
+        scale = mesh.vertices.flatten()
+        ax1.auto_scale_xyz(scale, scale, scale)
+        ax1._axis3don = False
+        ax1.legend()
+
+        ax2 = fig.add_subplot(1, 2, 2)
+        
+        gxn, gyn, gzn = np.meshgrid(φn,βi,λi)
+        xi = np.vstack(([[gxn.flatten()],[gyn.flatten()],[gzn.flatten()]])).T
+
+        Γ2 = interpn([φ,β,λ], Γ[:,:,:,:], xi)
+
+        ax2.plot(φn/(2*π),Γ2[:,0],label=r'$Γ_x$')
+        ax2.plot(φn/(2*π),Γ2[:,1],'--',label=r'$Γ_y$')
+        ax2.plot(φn/(2*π),Γ2[:,2],':',label=r'$Γ_z$')
+        ax2.set_xlabel('Rotational phase')
+        #ax2.set_ylabel('Torque')
+        ax2.legend()
+        ax2.set_xlim([0,1])
+        #ax2.set_ylim([-3,3])
+        plt.suptitle('Torque over rotation about the body axis for different body axis orientations')
+        plt.savefig(str(jjj+1)+'.png')
+        jjj += 1
+        
+# Rather use ffmpeg for animation, more efficient
+#ffmpeg -framerate 60 -i %d.png -c:v libx264 -pix_fmt yuv420p out.mp4
