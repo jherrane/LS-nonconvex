@@ -13,15 +13,15 @@ warnings.filterwarnings('ignore')
 
 def Φ_LS_a(a, b, c, α, φ=0, β=0, λ=0):
     """Determines the integral phase function Φ(α) = I(α)/I(0).
-    We work in the xy-plane, so phase angle can be used to construct a unambiguous
+    We work in the zx-plane, so phase angle can be used to construct a unambiguous
     rotation matrix in order to find e_out. Angle gamma is used to rotate the
-    scattering body about z''-axis
+    scattering body about y''-axis
     """
     e_in = np.array([0., 0., 1.])
     if pi - α < 1e-07: return 0.0
 
-    Rα = Rot.from_euler('x', α).as_matrix()
-    R = Rot.from_euler('ZXY', [λ, -β, φ]).as_matrix()
+    Rα = Rot.from_euler('y', α).as_matrix() 
+    R = Rot.from_euler('YXY', [λ, β, φ]).as_matrix()
     e_out = matmul(Rα, e_in)
     e_out = matmul(R.T, e_out)
     e_in = matmul(R.T, e_in)
@@ -59,19 +59,23 @@ def Φ_LS_dA(n, alpha, e_in, e_obs):
 
 def Φ_LS_n(N, α, φ=0, β=0, λ=0):
     """Calculates the Lommel-Seeliger integral phase function numerically."""
-    e_in = np.array([0.,0.,1.])
-    Rα = Rot.from_euler('x', α).as_matrix()
-    R = Rot.from_euler('ZXY', [φ, -β, λ]).as_matrix()
+    e_in = np.array([0., 0., 1.])
+    if pi - α < 1e-07: return 0.0
+
+    Rα = Rot.from_euler('y', α).as_matrix() 
+    R = Rot.from_euler('YXY', [λ, β, φ]).as_matrix()
     e_out = matmul(Rα, e_in)
+    e_out = matmul(R.T, e_out)
+    e_in = matmul(R.T, e_in)
     S = 0.0
     for i, n in enumerate(N):
         S += Φ_LS_dA(n, α, e_in, e_out)
     return S
 
-def Φ_LS(P, T, C, N, α, φ=0, β=0, λ=0):
+def Φ_LS(P, T, N, C, α, φ=0, β=0, λ=0):
     e_in = np.array([0.,0.,1.])
-    Rα = Rot.from_euler('x', α).as_matrix()
-    R = Rot.from_euler('ZXY', [λ, -β, φ]).as_matrix()
+    Rα = Rot.from_euler('y', α).as_matrix()
+    R = Rot.from_euler('YXY', [λ, β, φ]).as_matrix()
     e_eye = matmul(Rα, e_in)
     d = 10 * np.amax(np.abs(np.linalg.norm(P, axis=1))) * e_in
     P = P.dot(R.T) + d
@@ -92,7 +96,7 @@ def Φ_LS(P, T, C, N, α, φ=0, β=0, λ=0):
             if PointInTriangle(point, P[t, 1:3]):
                 vis[j] = False
         if vis[j]:
-            S += Φ_LS_dA(-N[j], α, e_in, e_eye)
+            S += Φ_LS_dA(N[j], α, e_in, e_eye)
     return S
 
 def Γ_dA(r, n, e_in):
@@ -102,7 +106,7 @@ def Γ_dA(r, n, e_in):
     dN = 2 * pi * mu0 * (mu0 * log(mu0 / (mu0 + 1)) + 1) * cross(nhat, r)
     return dN * dA
 
-def Γ_LS(P, T, C, N, φ=0, β=0, λ=0, convex=True):
+def Γ_LS(P, T, N, C, φ=0, β=0, λ=0, convex=True):
     """Calculates the Lommel-Seeliger integral phase function numerically."""
     e_in = np.array([0.,0.,1.])
     R = Rot.from_euler('ZXY', [φ, -β, λ]).as_matrix()
@@ -139,25 +143,26 @@ if __name__ == '__main__':
     a = 1
     b = 0.86
     c = 0.82
-    n = 250
-    gell = True
+    n = 1000
+    gell = False
 
     if gell == True:
         P, T = genellip(a, b, c, (n + 2), sigma=0.12, ell=0.3)
         T, N, C = surface_normals(P, T)
     else:
-        P, T, N, C = ellipsoid_points(a, b, c, n)
+        P, T, N, C = ellipsoid_points(a, b, c, n+2)
 
     α = np.linspace(0, pi, 33)
     Φ = np.zeros(α.size)
     Φn = np.zeros(α.size)
+    λ = 0.
     for i, αi in enumerate(α):
         Φ[i] = Φ_LS_a(a, b, c, α=αi, λ=λ)
         Φn[i] = Φ_LS_n(N, α=αi, λ=λ)
 
     if gell:
         for i, αi in enumerate(α):
-            Φn[i] = Φ_LS(P, T, C, N, α=αi, λ=λ)
+            Φn[i] = Φ_LS(P, T, N, C, α=αi, λ=λ)
 
     fig = plt.figure(figsize=(12, 8))
     plt.plot((α * 180 / pi), Φ, label=('Analytic with (a,b,c)=(%3.2f,%3.2f,%3.2f)' % (a, b, c)))
