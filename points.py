@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
-import numpy as np, random, matplotlib.pyplot as plt, sys, getopt, matplotlib as mpl, h5py, pymesh, seaborn as sns
+import numpy as np, random, matplotlib.pyplot as plt, sys, getopt, matplotlib as mpl, h5py, pymesh, seaborn as sns, trimesh
 from mpl_toolkits.mplot3d import Axes3D
 from numpy.random import uniform as urand, normal, seed
 from mpl_toolkits import mplot3d
-from numpy import pi, sin, cos, tan, matmul, dot, linspace, arccos, arcsin, sqrt, diag, log, cross, linalg as la
+from numpy import pi, pi as π, sin, cos, tan, matmul, dot, linspace, arccos, arcsin, sqrt, diag, log, cross, linalg as la
 from scipy.special import spherical_in, factorial, lpmn
 from matplotlib import rc, rcParams, pyplot as plt
 from scipy.spatial import ConvexHull as ch
+from scipy.spatial.transform import Rotation as Rot
+from matplotlib import cm
 
 # Gaussian correlation
 def corr(x,ell):
@@ -330,4 +332,33 @@ def plot_mesh(points, tris, centroids, normals, quivers=False):
    ax.set_zlabel('z')
    plt.show()
    return fig
+   
+def draw_mesh(mesh):
+    fig = plt.figure(figsize=(6, 6),frameon=False)
+    ax = mplot3d.Axes3D(fig)
+
+    # Collect face data as vectors for plotting
+    F = mesh.elements
+    P = mesh.nodes
+    T = mesh.elements
+    facevectors = np.zeros((F.shape[0],3,3))
+    for i, face in enumerate(F):
+        for j in range(3):
+            facevectors[i][j] = mesh.vertices[face[j],:]
+    ax.add_collection3d(mplot3d.art3d.Poly3DCollection(facevectors, facecolor=[0.5,0.5,0.5], lw=0.5,edgecolor=[0,0,0], alpha=0.66))
+    
+    scale = mesh.vertices.flatten()
+    
+    I = trimesh.Trimesh(vertices=P,
+                       faces=T,
+                       process=False).moment_inertia
+    
+    Ip, Q = trimesh.inertia.principal_axis(I)
+    
+    ax.quiver(0,0,0,Q[2,0],Q[2,1],Q[2,2],length=20,normalize=False)
+    ax.quiver(15,10,-10,0,0,20,length=1,normalize=False,color='k')
+    ax.auto_scale_xyz(scale, scale, scale)
+
+    plt.show()
+    return fig
 

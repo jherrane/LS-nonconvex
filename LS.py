@@ -5,9 +5,6 @@ from numpy.linalg import norm
 from points import *
 from scipy.spatial.transform import Rotation as Rot
 
-plt.rcParams['font.family'] = 'Lucida Grande'
-plt.rcParams['font.size'] = 16
-plt.style.use('ggplot')
 import warnings
 warnings.filterwarnings('ignore')
 
