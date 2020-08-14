@@ -44,12 +44,19 @@ mesh = pymesh.load_mesh('eros_normal_detail.mesh'.format(detail_levels[level]))
 P = mesh.nodes; T = mesh.elements
 I = trimesh.Trimesh(vertices=P, faces=T, process=False).moment_inertia
 Ip, Q = trimesh.inertia.principal_axis(I)
+vol = trimesh.Trimesh(vertices=P, faces=T, process=False).volume*1e9 # Volume in cubic metres
 P = matmul(P,Q.T)
 T, N, C = surface_normals(P, T)
 mesh = pymesh.form_mesh(P,T)
 
+F0 = 1000 # Incident radiant flux
+c = 3e8
+albedo = 0.15
+aeff = (vol/(4*np.pi/3))**(1./3)
+print(vol, aeff, (F0*albedo)/(4*c*aeff**3))
 data = np.loadtxt('data-{:s}.dat'.format(detail_levels[level]))
-Γ = data.reshape([φ.size, β.size, λ.size, 3])
+Γ = data.reshape([φ.size, β.size, λ.size, 3])*(F0*albedo)/(4*c)*1e9 # Torque in Nm
+Γ = Γ*1e-6 #Torque in meganewtonmetres
 gammax = np.amax(np.abs(Γ))
 
 F = mesh.elements
@@ -82,12 +89,11 @@ for kkk in range(λ.size):
 
         ax2 = fig.add_subplot(1, 2, 2)
         
-        x, y = interp(φ, Γ, iii, kkk)
-        ax2.plot(x/(2*π),y[:,0],label=r'$Γ_x$')
-        ax2.plot(x/(2*π),y[:,1],'--',label=r'$Γ_y$')
-        ax2.plot(x/(2*π),y[:,2],':',label=r'$Γ_z$')
+        ax2.plot(φ/(2*π),Γ[:,iii,kkk,0],label=r'$Γ_x$')
+        ax2.plot(φ/(2*π),Γ[:,iii,kkk,1],'--',label=r'$Γ_y$')
+        ax2.plot(φ/(2*π),Γ[:,iii,kkk,2],':',label=r'$Γ_z$')
         ax2.set_xlabel('Rotational phase')
-        #ax2.set_ylabel('Torque')
+        ax2.set_ylabel(r'$\Gamma$ (MNm)')
         ax2.legend(loc=1)
         ax2.set_xlim([0,1])
         ax2.set_ylim([-gammax,gammax])
